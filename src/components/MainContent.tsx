@@ -1,4 +1,4 @@
-import { Backdrop, Box, Button, CircularProgress, FormControl, Grid2, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography } from "@mui/material"
+import { Backdrop, Box, Button, CircularProgress, Divider, FormControl, Grid2, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography } from "@mui/material"
 import { LineChart } from '@mui/x-charts/LineChart';
 import { useState } from "react";
 import { companyEncodedValues, companyNameSelectFieldValues } from "../constants";
@@ -6,21 +6,25 @@ import { DatePicker } from "@mui/x-date-pickers";
 import moment, { Moment } from "moment";
 import { CompanyNameValue } from "../interfaces";
 import useQuery from "../hooks/useQuery";
+import { ScatterChart } from "@mui/x-charts";
 
 const MainContent = () => {
+    // Basic Company Information
     const [company, setCompany] = useState(companyNameSelectFieldValues[0].value);
     const [companyEncodedValue, setCompanyEncodedValue] = useState(0);
-    const [complaintCount, setComplaintCount] = useState("0");
     const [endDate, setEndDate] = useState<Moment | null>(moment('2012-12-01'));
     const [startDate, setStartDate] = useState<Moment | null>(moment('2011-12-01'));
 
+    // Yesterday's Data
+    const [complaintCount, setComplaintCount] = useState("0");
+
+    // Plot Data
     const [plotDates, setPlotDates] = useState<Moment[]>([]);
     const [plotClosePrices, setPlotClosePrices] = useState<number[]>([]);
     const [plotComplaintCounts, setPlotComplaintCounts] = useState<number[]>([]);
+    const [scatterPlotData, setScatterPlotData] = useState<{x: number; y: number; id: number}[]>([]);
 
     const { query, isLoading } = useQuery();
-
-    console.log(isLoading);
 
     const runQuery = () => {
         query(company, companyEncodedValue, startDate as Moment, endDate as Moment, complaintCount)
@@ -28,6 +32,14 @@ const MainContent = () => {
                 setPlotDates(result.map((row) => (row.date)));
                 setPlotClosePrices(result.map((row) => (row.close_price)));
                 setPlotComplaintCounts(result.map((row) => (row.complaint_count)));
+                
+                setScatterPlotData(
+                    result.map((row, index) => ({
+                        "id": index,
+                        "x": row.complaint_count,
+                        "y": row.close_price
+                    }))
+                );
             })
     }
 
@@ -132,6 +144,10 @@ const MainContent = () => {
                     (plotDates.length > 1) && 
                     <>
                         <Grid2 size={12}>
+                            <Divider/>
+                        </Grid2>
+
+                        <Grid2 size={12}>
                             <LineChart
                                 xAxis={[
                                     {
@@ -148,10 +164,10 @@ const MainContent = () => {
                                     { 
                                         data: plotClosePrices,
                                         showMark: false,
-                                        curve: "natural",
+                                        curve: "linear",
                                     }
                                 ]}
-                                height={300}
+                                height={400}
                             />
                         </Grid2>
 
@@ -172,30 +188,28 @@ const MainContent = () => {
                                     { 
                                         data: plotComplaintCounts,
                                         showMark: false,
-                                        curve: "natural",
+                                        curve: "linear",
                                     }
                                 ]}
-                                height={300}
+                                height={400}
                             />
                         </Grid2>
 
                         <Grid2 size={12}>
-                            <LineChart
+                            <ScatterChart
+                                height={400}
                                 xAxis={[
                                     {
-                                        label: "Complaints",
-                                        data: plotComplaintCounts,
-                                    },
+                                        min: 0,
+                                        label: "Complaints"
+                                    }
                                 ]}
                                 yAxis={[{ label: "Stock Price (USD)" }]}
                                 series={[
-                                    { 
-                                        data: plotClosePrices,
-                                        showMark: false,
-                                        curve: "natural",
-                                    }
+                                    {
+                                        data: scatterPlotData,
+                                    },
                                 ]}
-                                height={300}
                             />
                         </Grid2>
                     </>
