@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, Grid2, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography } from "@mui/material"
+import { Backdrop, Box, Button, CircularProgress, FormControl, Grid2, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography } from "@mui/material"
 import { LineChart } from '@mui/x-charts/LineChart';
 import { useState } from "react";
 import { companyEncodedValues, companyNameSelectFieldValues } from "../constants";
@@ -131,7 +131,7 @@ const MainContent = () => {
                 {
                     (plotDates.length > 1) && 
                     <>
-                        <Grid2 size={6}>
+                        <Grid2 size={12}>
                             <LineChart
                                 xAxis={[
                                     {
@@ -147,14 +147,15 @@ const MainContent = () => {
                                 series={[
                                     { 
                                         data: plotClosePrices,
-                                        showMark: false, 
+                                        showMark: false,
+                                        curve: "natural",
                                     }
                                 ]}
                                 height={300}
                             />
                         </Grid2>
 
-                        <Grid2 size={6}>
+                        <Grid2 size={12}>
                             <LineChart
                                 xAxis={[
                                     {
@@ -170,7 +171,8 @@ const MainContent = () => {
                                 series={[
                                     { 
                                         data: plotComplaintCounts,
-                                        showMark: false, 
+                                        showMark: false,
+                                        curve: "natural",
                                     }
                                 ]}
                                 height={300}
@@ -189,7 +191,8 @@ const MainContent = () => {
                                 series={[
                                     { 
                                         data: plotClosePrices,
-                                        showMark: false, 
+                                        showMark: false,
+                                        curve: "natural",
                                     }
                                 ]}
                                 height={300}
@@ -198,6 +201,13 @@ const MainContent = () => {
                     </>
                 }
             </Grid2>
+
+            <Backdrop
+                sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })}
+                open={isLoading}
+            >
+                <CircularProgress color="inherit" />
+            </Backdrop>
         </Box>
     );
 }
