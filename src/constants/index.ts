@@ -55,3 +55,9 @@ export const companyEncodedValues: EncodedCompanyValueMap = new Map([
     ["U.S. BANCORP", 8],
     ["WELLS FARGO & COMPANY", 9],
 ]);
+
+export const specialCharacterEncodedValues: Map<string, string> = new Map([
+    [" ", "%20"],
+    ["&", "%26"],
+    [",", "%2C"]
+]);

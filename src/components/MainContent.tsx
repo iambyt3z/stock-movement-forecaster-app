@@ -1,17 +1,35 @@
-import { Box, FormControl, Grid2, InputLabel, MenuItem, Select, SelectChangeEvent, Typography } from "@mui/material"
+import { Box, Button, FormControl, Grid2, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography } from "@mui/material"
+import { LineChart } from '@mui/x-charts/LineChart';
 import { useState } from "react";
 import { companyEncodedValues, companyNameSelectFieldValues } from "../constants";
 import { DatePicker } from "@mui/x-date-pickers";
 import moment, { Moment } from "moment";
 import { CompanyNameValue } from "../interfaces";
+import useQuery from "../hooks/useQuery";
 
 const MainContent = () => {
     const [company, setCompany] = useState(companyNameSelectFieldValues[0].value);
     const [companyEncodedValue, setCompanyEncodedValue] = useState(0);
-    const [startDate, setStartDate] = useState<Moment | null>(moment('2011-12-01'));
+    const [complaintCount, setComplaintCount] = useState("0");
     const [endDate, setEndDate] = useState<Moment | null>(moment('2012-12-01'));
+    const [startDate, setStartDate] = useState<Moment | null>(moment('2011-12-01'));
 
-    console.log(company, companyEncodedValue, startDate, endDate);
+    const [plotDates, setPlotDates] = useState<Moment[]>([]);
+    const [plotClosePrices, setPlotClosePrices] = useState<number[]>([]);
+    const [plotComplaintCounts, setPlotComplaintCounts] = useState<number[]>([]);
+
+    const { query, isLoading } = useQuery();
+
+    console.log(isLoading);
+
+    const runQuery = () => {
+        query(company, companyEncodedValue, startDate as Moment, endDate as Moment, complaintCount)
+            .then((result) => {                
+                setPlotDates(result.map((row) => (row.date)));
+                setPlotClosePrices(result.map((row) => (row.close_price)));
+                setPlotComplaintCounts(result.map((row) => (row.complaint_count)));
+            })
+    }
 
     return (
         <Box px={10} pt={5}>
@@ -83,6 +101,102 @@ const MainContent = () => {
                         }}
                     />
                 </Grid2>
+
+                <Grid2 size={4}>
+                    <></>
+                </Grid2>
+
+                <Grid2 size={4}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        label="Yesterday's Complaint Count"
+                        value={complaintCount}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setComplaintCount(event.target.value);
+                        }}
+                    />
+                </Grid2>
+
+                <Grid2 size={8}>
+                    <></>
+                </Grid2>
+
+                <Grid2 size={12}>
+                    <Button variant="contained" onClick={runQuery}>
+                        Submit
+                    </Button>
+                </Grid2>
+
+                {
+                    (plotDates.length > 1) && 
+                    <>
+                        <Grid2 size={6}>
+                            <LineChart
+                                xAxis={[
+                                    {
+                                        label: "Date",
+                                        data: plotDates,
+                                        tickInterval: plotDates,
+                                        disableTicks: true,
+                                        scaleType: "time",
+                                        valueFormatter: (date) => date.format("YYYY-MM-DD"),
+                                    },
+                                ]}
+                                yAxis={[{ label: "Stock Price (USD)" }]}
+                                series={[
+                                    { 
+                                        data: plotClosePrices,
+                                        showMark: false, 
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Grid2>
+
+                        <Grid2 size={6}>
+                            <LineChart
+                                xAxis={[
+                                    {
+                                        label: "Date",
+                                        data: plotDates,
+                                        tickInterval: plotDates,
+                                        disableTicks: true,
+                                        scaleType: "time",
+                                        valueFormatter: (date) => date.format("YYYY-MM-DD"),
+                                    },
+                                ]}
+                                yAxis={[{ label: "Complaints" }]}
+                                series={[
+                                    { 
+                                        data: plotComplaintCounts,
+                                        showMark: false, 
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Grid2>
+
+                        <Grid2 size={12}>
+                            <LineChart
+                                xAxis={[
+                                    {
+                                        label: "Complaints",
+                                        data: plotComplaintCounts,
+                                    },
+                                ]}
+                                yAxis={[{ label: "Stock Price (USD)" }]}
+                                series={[
+                                    { 
+                                        data: plotClosePrices,
+                                        showMark: false, 
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Grid2>
+                    </>
+                }
             </Grid2>
         </Box>
     );
