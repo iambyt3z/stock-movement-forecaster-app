@@ -6,7 +6,7 @@ import { DatePicker } from "@mui/x-date-pickers";
 import moment, { Moment } from "moment";
 import { CompanyNameValue } from "../interfaces";
 import useQuery from "../hooks/useQuery";
-import { ScatterChart } from "@mui/x-charts";
+import { ChartsReferenceLine, ScatterChart } from "@mui/x-charts";
 
 const MainContent = () => {
     // Basic Company Information
@@ -17,8 +17,11 @@ const MainContent = () => {
 
     // Yesterday's Data
     const [complaintCount, setComplaintCount] = useState("0");
+    const [openPrice, setOpenPrice] = useState("0");
+    const [closePrice, setClosePrice] = useState("0");
 
     // Plot Data
+    const [priceDropProb, setPriceDropProb] = useState(0);
     const [plotDates, setPlotDates] = useState<Moment[]>([]);
     const [plotClosePrices, setPlotClosePrices] = useState<number[]>([]);
     const [plotComplaintCounts, setPlotComplaintCounts] = useState<number[]>([]);
@@ -27,17 +30,20 @@ const MainContent = () => {
     const { query, isLoading } = useQuery();
 
     const runQuery = () => {
-        query(company, companyEncodedValue, startDate as Moment, endDate as Moment, complaintCount)
-            .then((result) => {                
-                setPlotDates(result.map((row) => (row.date)));
-                setPlotClosePrices(result.map((row) => (row.close_price)));
-                setPlotComplaintCounts(result.map((row) => (row.complaint_count)));
+        query(company, companyEncodedValue, startDate as Moment, endDate as Moment, complaintCount, openPrice, closePrice)
+            .then((result) => {
+                const { plot_data, prob_close_price_drop } = result;
+                
+                setPriceDropProb(prob_close_price_drop);
+                setPlotDates(plot_data.map((row) => (row.date)));
+                setPlotClosePrices(plot_data.map((row) => (row.close_price)));
+                setPlotComplaintCounts(plot_data.map((row) => (row.complaint_count)));
                 
                 setScatterPlotData(
-                    result.map((row, index) => ({
+                    plot_data.map((row, index) => ({
                         "id": index,
                         "x": row.complaint_count,
-                        "y": row.close_price
+                        "y": row.close_price_difference
                     }))
                 );
             })
@@ -130,21 +136,49 @@ const MainContent = () => {
                     />
                 </Grid2>
 
-                <Grid2 size={8}>
-                    <></>
+                <Grid2 size={4}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        label="Yesterday's Open Price (USD)"
+                        value={openPrice}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setOpenPrice(event.target.value);
+                        }}
+                    />
+                </Grid2>
+
+                <Grid2 size={4}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        label="Yesterday's Close Price (USD)"
+                        value={closePrice}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setClosePrice(event.target.value);
+                        }}
+                    />
                 </Grid2>
 
                 <Grid2 size={12}>
                     <Button variant="contained" onClick={runQuery}>
-                        Submit
+                        <Typography>
+                            Submit
+                        </Typography>
                     </Button>
                 </Grid2>
 
                 {
                     (plotDates.length > 1) && 
-                    <>
+                    <Grid2 container spacing={10}>
                         <Grid2 size={12}>
                             <Divider/>
+                        </Grid2>
+
+                        <Grid2 size={12} pl={10}>
+                            <Typography fontWeight={600}>
+                                {`Probability of stock price droping = ${ (priceDropProb * 100).toFixed(2) }%`}
+                            </Typography>
                         </Grid2>
 
                         <Grid2 size={12}>
@@ -201,18 +235,29 @@ const MainContent = () => {
                                 xAxis={[
                                     {
                                         min: 0,
-                                        label: "Complaints"
+                                        label: "Complaints",
                                     }
                                 ]}
-                                yAxis={[{ label: "Stock Price (USD)" }]}
-                                series={[
-                                    {
-                                        data: scatterPlotData,
-                                    },
+                                yAxis={[
+                                    { 
+                                        label: "Stock Price Difference (USD)",
+                                        colorMap: {
+                                            type: 'piecewise',
+                                            thresholds: [0],
+                                            colors: ['#F67280', '#05B2AB']
+                                        },
+                                    }
                                 ]}
-                            />
+                                series={[{ data: scatterPlotData }]}
+                            >
+                                <ChartsReferenceLine y={0} lineStyle={{ opacity: 0.5 }}/>
+                            </ScatterChart>
+
+                            <Grid2 size={12}>
+                                <Box height="200px"></Box>
+                            </Grid2>
                         </Grid2>
-                    </>
+                    </Grid2>
                 }
             </Grid2>
 

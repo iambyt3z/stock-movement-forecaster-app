@@ -6,10 +6,12 @@ import { Response, Result } from "../interfaces";
 interface HookReturn {
     query: (
         companyName: string,
-        companyEncodedValue: number,
+        companyNameEncoded: number,
         startDate: Moment,
         endDate: Moment,
-        complaintCount: string
+        complaintCount: string,
+        openPrice: string,
+        closePrice: string
     ) => Promise<Result>;
     isLoading: boolean;
 }
@@ -19,19 +21,23 @@ function useQuery(): HookReturn {
 
     const query = async (
         companyName: string,
-        companyEncodedValue: number,
+        companyNameEncoded: number,
         startDate: Moment,
         endDate: Moment,
-        complaintCount: string
+        complaintCount: string,
+        openPrice: string,
+        closePrice: string
     ): Promise<Result> => {
         setIsLoading(true);
 
         const apiUrl = "http://127.0.0.1:8000/company?"
             + `company_name=${encodeURIComponent(companyName)}&`
-            + `company_encoded_value=${companyEncodedValue}&`
+            + `company_name_encoded=${companyNameEncoded}&`
             + `start_date=${startDate.format('YYYY-MM-DD')}&`
             + `end_date=${endDate.format('YYYY-MM-DD')}&`
-            + `complaints_count=${complaintCount}`
+            + `complaints_count=${complaintCount}&`
+            + `open_price=${openPrice}&`
+            + `close_price=${closePrice}`
 
         const config = {
             method: 'get',
@@ -40,23 +46,31 @@ function useQuery(): HookReturn {
             headers: { }
         };
 
-        let result: Result = [];
+        let result: Result = {
+            "plot_data": [],
+            "prob_close_price_drop": 0
+        };
 
         await axios.request(config)
             .then((response) => {
                 const responseData = response.data as Response;
+                const plotData = responseData.plot_data;
+                const priceDropProb = responseData.prob_close_price_drop;
 
-                result = responseData.map((responseElement) => {
+                const updatePlotData = plotData.map((plotElement) => {
                     return {
-                        "date": moment(responseElement.date),
-                        "company": responseElement.company,
-                        "complaint_count": Number(responseElement.complaint_count),
-                        "open_price": Number(responseElement.open_price),
-                        "high_price": Number(responseElement.high_price),
-                        "low_price": Number(responseElement.low_price),
-                        "close_price": Number(responseElement.close_price),
+                        "date": moment(plotElement.date),
+                        "company": plotElement.company,
+                        "complaint_count": Number(plotElement.complaint_count),
+                        "close_price": Number(plotElement.close_price),
+                        "close_price_difference": Number(plotElement.close_price_difference),
                     }
-                })
+                });
+
+                result = {
+                    "plot_data": updatePlotData,
+                    "prob_close_price_drop": priceDropProb
+                };
             })
             .catch((error) => {
                 console.error(error);

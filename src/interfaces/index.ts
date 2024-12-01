@@ -19,25 +19,28 @@ export interface SelectFeildItem {
 
 export type EncodedCompanyValueMap = Map<CompanyNameValue, number>;
 
-export interface ResponseElement {
+export interface ResponsePlotDataElement {
     "date": string;
     "company": string;
     "complaint_count": string;
-    "open_price": string;
-    "high_price": string;
-    "low_price": string;
     "close_price": string;
+    "close_price_difference": string;
 }
 
-export interface ResultElement {
+export interface ResultPlotElement {
     "date": Moment;
     "company": string;
     "complaint_count": number;
-    "open_price": number;
-    "high_price": number;
-    "low_price": number;
     "close_price": number;
+    "close_price_difference": number;
 }
 
-export type Response = ResponseElement[];
-export type Result = ResultElement[];
+export interface Response {
+    "prob_close_price_drop": number;
+    "plot_data": ResponsePlotDataElement[];
+};
+
+export interface Result {
+    "prob_close_price_drop": number;
+    "plot_data": ResultPlotElement[];
+}
